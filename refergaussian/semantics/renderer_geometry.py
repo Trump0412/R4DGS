@@ -382,24 +382,20 @@ def _load_renderer_runtime(run_dir: Path) -> tuple[Any, Any, Any, Any, int]:
     project_root = Path(__file__).resolve().parents[2]
     _prepare_external_imports(project_root)
 
-    from arguments import ModelHiddenParams, ModelParams, PipelineParams, get_combined_args
+    from arguments import ModelHiddenParams, ModelParams, PipelineParams
+    from refergaussian.checkpoint import saved_model_args, latest_iteration_dir
     from gaussian_renderer import GaussianModel
     from scene import Scene
 
-    argv_before = sys.argv[:]
-    try:
-        # get_combined_args reads the standard cfg_args stored in the run root.
-        sys.argv = [argv_before[0] if argv_before else "renderer_geometry", "-m", str(run_dir)]
-        parser = argparse.ArgumentParser(description="ReferGaussian renderer geometry")
-        model = ModelParams(parser, sentinel=True)
-        PipelineParams(parser)
-        hidden = ModelHiddenParams(parser)
-        args = get_combined_args(parser)
-    finally:
-        sys.argv = argv_before
+    parser = argparse.ArgumentParser(description="ReferGaussian renderer geometry")
+    model = ModelParams(parser)
+    PipelineParams(parser)
+    hidden = ModelHiddenParams(parser)
+    args = argparse.Namespace(**saved_model_args(run_dir, vars(parser.parse_args([]))))
 
     gaussians = GaussianModel(args.sh_degree, hidden.extract(args))
-    scene = Scene(model.extract(args), gaussians, load_iteration=-1, shuffle=False)
+    iteration = int(latest_iteration_dir(run_dir).name[10:])
+    scene = Scene(model.extract(args), gaussians, load_iteration=iteration, shuffle=False)
     return args, gaussians, None, scene, int(scene.loaded_iter)
 
 
@@ -511,6 +507,7 @@ def _valid_existing_cache(
     output_dir: Path,
     frame_requests: list[dict[str, Any]],
     gaussian_ids: np.ndarray,
+    identity: dict[str, Any] | None = None,
 ) -> bool:
     try:
         cache = RendererGeometryCache(output_dir)
@@ -519,6 +516,9 @@ def _valid_existing_cache(
     return (
         cache.image_ids == [str(row["image_id"]) for row in frame_requests]
         and np.array_equal(np.asarray(cache.gaussian_ids, dtype=np.int64), gaussian_ids)
+        and np.array_equal(np.asarray(cache.manifest["time_values"]),
+                           np.asarray([float(row["time_value"]) for row in frame_requests]))
+        and cache.manifest.get("checkpoint_identity") == identity
     )
 
 
@@ -540,6 +540,8 @@ def export_renderer_geometry(
     run_dir = Path(run_dir)
     dataset_dir = Path(dataset_dir)
     output_dir = Path(output_dir)
+    from refergaussian.checkpoint import checkpoint_identity
+    identity = checkpoint_identity(run_dir)
     normalized_requests = [
         {
             "image_id": str(row["image_id"]),
@@ -587,7 +589,7 @@ def export_renderer_geometry(
             )
 
     if output_dir.exists():
-        if _valid_existing_cache(output_dir, normalized_requests, ids):
+        if _valid_existing_cache(output_dir, normalized_requests, ids, identity):
             return output_dir
         if not overwrite:
             raise FileExistsError(
@@ -673,6 +675,7 @@ def export_renderer_geometry(
         "projection_fields": ["projection_world_view", "projection_full", "projection_image_sizes"],
         "projection_mode": "4dgs_renderer_camera",
         "input_backbone": "upstream_4dgaussians",
+        "checkpoint_identity": identity,
         "elapsed_seconds": float(time.monotonic() - start),
     }
     _write_json(output_dir / GEOMETRY_MANIFEST_NAME, manifest)

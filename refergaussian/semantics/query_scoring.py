@@ -75,6 +75,9 @@ def _write_json(path: Path, payload: dict[str, Any]) -> None:
 
 
 def _read_simple_yaml(path: Path) -> dict[str, Any]:
+    from refergaussian.checkpoint import read_cfg_args
+    if (path.parent / "cfg_args").is_file():
+        return read_cfg_args(path.parent)
     if not path.exists():
         return {}
     payload: dict[str, Any] = {}

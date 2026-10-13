@@ -261,6 +261,9 @@ def _selection_track_state_mode(payload: dict[str, Any]) -> str | None:
 
 
 def _read_simple_yaml(path: Path) -> dict[str, Any]:
+    from refergaussian.checkpoint import read_cfg_args
+    if (path.parent / "cfg_args").is_file():
+        return read_cfg_args(path.parent)
     if not path.exists():
         return {}
     payload: dict[str, Any] = {}

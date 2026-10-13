@@ -19,7 +19,17 @@ clone_checkout_repo() {
   local target="${EXTERNAL_DIR}/${name}"
 
   if [[ -f "${target}/${marker}" ]]; then
-    echo "[ok] ${name} already present: ${target}"
+    local expected actual
+    expected="$(git -C "${target}" rev-parse "${repo_ref}^{commit}")" || return 2
+    actual="$(git -C "${target}" rev-parse HEAD)" || return 2
+    if [[ "${actual}" != "${expected}" ]] ||
+       ! git -C "${target}" diff --quiet HEAD -- ||
+       [[ -n "$(git -C "${target}" submodule status --recursive | sed -n '/^[+-U]/p')" ]]; then
+      echo "[error] ${name} must be clean at ${repo_ref}: ${target}" >&2
+      echo "Move your existing checkout aside and rerun setup, or restore the pinned revision explicitly." >&2
+      return 2
+    fi
+    echo "[ok] ${name} verified at ${actual}: ${target}"
     return 0
   fi
 

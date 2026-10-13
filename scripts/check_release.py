@@ -73,6 +73,8 @@ REQUIRED_RUNTIME_FILES = (
     "docs/METRICS.md",
     "docs/assets/framework.webp",
     "refergaussian/run_identity.py",
+    "refergaussian/checkpoint.py",
+    "scripts/prepare_4dgs_run.py",
     "refergaussian/semantics/semantic_renderer.py",
     "refergaussian/semantics/surface_mask_field.py",
     "refergaussian/semantics/mask_supported_lifting.py",

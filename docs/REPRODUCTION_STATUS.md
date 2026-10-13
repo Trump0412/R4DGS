@@ -1,6 +1,33 @@
 # R4DGS Reproduction Status
 
-Updated: 2026-08-07
+Updated: 2026-10-13
+
+## Standard-checkpoint correction
+
+The previous quick start trained an unmodified upstream 4DGS model, but the
+query loader still required a legacy `temporal_params.pth`, a prebuilt
+trajectory bank, and `config.yaml`. This revision removes that contract mismatch,
+derives trajectories from `deformation.pth`, preserves saved network arguments,
+and validates matching checkpoint/render iterations. HyperNeRF preparation now
+runs in the upstream working directory using the configured environment.
+
+CPU regression tests cover missing standard weights, partial iterations,
+saved model configuration, exact sampled trajectory preservation, derivatives,
+and checkpoint-bound cache invalidation. GPU scene loading, a fresh espresso
+query, and complete 9-query/89-query reruns remain pending. The paper tables and
+historical audits below are not validation results for this corrected revision.
+
+Validation completed on 2026-10-13 with Linux / Python 3.10:
+
+- `python -m unittest discover -s tests -v`: 196 tests passed, including isolated
+  shell tests for dependency revisions and COLMAP working-directory selection.
+- `python scripts/check_release.py`: passed.
+- `bash -n` for all `scripts/*.sh`: passed.
+
+The new trajectory sampler is covered with nonlinear synthetic network outputs
+and round-trip cache tests. These tests do not load a real CUDA checkpoint or
+measure segmentation accuracy. Start GPU validation with a fresh espresso
+query, then run the complete four-scene protocol in a new output directory.
 
 ## Release Boundary
 

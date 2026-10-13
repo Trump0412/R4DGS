@@ -13,10 +13,11 @@ class RunIdentityTest(unittest.TestCase):
     def test_standard_upstream_layout_is_accepted(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             run_dir = Path(temp_dir)
-            (run_dir / "cfg_args").write_text("Namespace(model_path='x')\n", encoding="utf-8")
+            (run_dir / "cfg_args").write_text("Namespace(model_path='x', source_path='scene')\n", encoding="utf-8")
             point_cloud = run_dir / "point_cloud" / "iteration_14000"
             point_cloud.mkdir(parents=True)
             (point_cloud / "point_cloud.ply").write_text("ply\n", encoding="utf-8")
+            (point_cloud / "deformation.pth").write_bytes(b"checkpoint")
             renders = run_dir / "test" / "ours_14000" / "renders"
             renders.mkdir(parents=True)
             (renders / "00000.png").write_bytes(b"png")
@@ -28,10 +29,9 @@ class RunIdentityTest(unittest.TestCase):
             run_dir = Path(temp_dir)
             errors = validate_query_ready_4dgs_run(run_dir)
 
-        self.assertEqual(len(errors), 3)
-        self.assertIn("missing upstream 4DGS arguments", errors[0])
+        self.assertEqual(len(errors), 2)
+        self.assertIn("upstream 4DGS arguments", errors[0])
         self.assertIn("missing upstream 4DGS checkpoint", errors[1])
-        self.assertIn("missing upstream 4DGS test renders", errors[2])
 
 
 if __name__ == "__main__":

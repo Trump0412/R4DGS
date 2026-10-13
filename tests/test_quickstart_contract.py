@@ -77,8 +77,8 @@ class QuickStartContractTest(unittest.TestCase):
 
         self.assertEqual(source, Path("/tmp/data/hypernerf/misc/americano"))
         self.assertEqual(output, Path("/tmp/runs/baseline_4dgs/hypernerf/americano"))
-        self.assertTrue(commands[0][1].endswith("external/4DGaussians/train.py"))
-        self.assertTrue(commands[1][1].endswith("external/4DGaussians/render.py"))
+        self.assertTrue(Path(commands[0][1]).as_posix().endswith("external/4DGaussians/train.py"))
+        self.assertTrue(Path(commands[1][1]).as_posix().endswith("external/4DGaussians/render.py"))
 
     def test_readme_and_page_embed_the_method_figure(self) -> None:
         method_figure = ROOT / "docs" / "assets" / "framework.webp"

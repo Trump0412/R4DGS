@@ -1,40 +1,31 @@
 """Validation helpers for frozen upstream 4DGS inputs."""
-
-from __future__ import annotations
-
 from pathlib import Path
+from refergaussian.checkpoint import latest_iteration_dir, saved_model_args
 
 
 def validate_query_ready_4dgs_run(run_dir: str | Path) -> list[str]:
-    """Return reasons why an upstream 4DGS run is not query-ready.
-
-    ReferGaussian does not train the scene representation.  Query inference
-    consumes the standard files produced by the pinned 4DGaussians project:
-    its serialized arguments, Gaussian checkpoint, and test-camera renders.
-    """
-
+    """Validate the fine-stage iteration actually consumed by inference."""
     run_path = Path(run_dir)
     if not run_path.is_dir():
         return [f"run directory is missing: {run_path}"]
-
     errors: list[str] = []
-    cfg_args = run_path / "cfg_args"
-    if not cfg_args.is_file():
-        errors.append(f"missing upstream 4DGS arguments: {cfg_args}")
-
-    point_cloud_root = run_path / "point_cloud"
-    point_clouds = sorted(point_cloud_root.glob("iteration_*/point_cloud.ply"))
-    if not point_clouds:
-        errors.append(
-            "missing upstream 4DGS checkpoint: "
-            f"{point_cloud_root / 'iteration_*/point_cloud.ply'}"
-        )
-
-    test_root = run_path / "test"
-    renders = sorted(test_root.glob("ours_*/renders/*"))
-    if not any(path.is_file() for path in renders):
-        errors.append(
-            "missing upstream 4DGS test renders: "
-            f"{test_root / 'ours_*/renders/*'}"
-        )
+    try:
+        config = saved_model_args(run_path, {})
+        if not config.get("source_path"):
+            errors.append("cfg_args is missing source_path")
+    except (OSError, ValueError, SyntaxError) as exc:
+        errors.append(f"missing or invalid upstream 4DGS arguments: {run_path / 'cfg_args'} ({exc})")
+    try:
+        iteration_dir = latest_iteration_dir(run_path)
+    except FileNotFoundError as exc:
+        errors.append(f"missing upstream 4DGS checkpoint: {exc}")
+        return errors
+    for name in ("point_cloud.ply", "deformation.pth"):
+        path = iteration_dir / name
+        if not path.is_file() or path.stat().st_size == 0:
+            errors.append(f"missing or empty upstream 4DGS checkpoint file: {path}")
+    iteration = int(iteration_dir.name[10:])
+    render_dir = run_path / "test" / f"ours_{iteration}" / "renders"
+    if not any(p.is_file() and p.stat().st_size for p in render_dir.glob("*.png")):
+        errors.append(f"missing upstream 4DGS test renders for iteration {iteration}: {render_dir}")
     return errors

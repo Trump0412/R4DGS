@@ -79,7 +79,11 @@ PY
       return 2
     fi
     echo "[colmap] generating point cloud for ${group_scene}"
-    bash "${ROOT_DIR}/external/4DGaussians/colmap.sh" "${target_dir}" hypernerf
+    (
+      cd "${ROOT_DIR}/external/4DGaussians"
+      export PATH="${GS_ENV_PATH}/bin:${PATH}"
+      bash -e ./colmap.sh "${target_dir}" hypernerf
+    )
     gs_python "${ROOT_DIR}/external/4DGaussians/scripts/downsample_point.py" \
       "${target_dir}/colmap/dense/workspace/fused.ply" \
       "${target_dir}/points3D_downsample2.ply"

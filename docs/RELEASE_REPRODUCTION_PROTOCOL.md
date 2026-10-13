@@ -25,6 +25,7 @@ Use the pinned, unmodified upstream 4DGaussians checkout prepared by:
 ```bash
 bash scripts/bootstrap_external.sh
 bash scripts/setup_4dgs_env.sh cuda121
+source scripts/common.sh
 gs_python scripts/train_4dgs.py --dataset hypernerf --scene misc/americano
 ```
 
@@ -32,12 +33,25 @@ Each query-ready scene run must provide:
 
 ```text
 <run_dir>/cfg_args
-<run_dir>/point_cloud/iteration_*/point_cloud.ply
-<run_dir>/test/ours_*/renders/*
+<run_dir>/point_cloud/iteration_<N>/point_cloud.ply
+<run_dir>/point_cloud/iteration_<N>/deformation.pth
+<run_dir>/test/ours_<N>/renders/*.png
 ```
 
 `scripts/validate_4dgs_run.py` and batch preflight reject missing inputs. The
-checkpoint is never optimized by ReferGaussian.
+checkpoint is never optimized by ReferGaussian. The latest numeric fine-stage
+iteration is selected consistently; a partial later iteration is an error.
+
+The query pipeline calls `prepare_4dgs_run.py` before lifting. It derives a
+64-time trajectory bank from the frozen upstream deformation network and stores
+a checkpoint/configuration identity beside it. Cached legacy polynomial
+trajectories are not accepted. `temporal_params.pth` and `config.yaml` are not
+required. Network structure is restored from `cfg_args` without overwriting it
+with parser defaults. See the README for preparation and migration commands.
+
+This correction changes the geometry consumed by downstream inference. Fresh
+Public and R4D aggregate GPU runs are required before claiming that paper
+metrics are reproduced by this revision.
 
 ## Protocol Identities
 

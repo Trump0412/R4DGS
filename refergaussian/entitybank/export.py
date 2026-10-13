@@ -8,7 +8,7 @@ import numpy as np
 from scipy.cluster.vq import kmeans2
 import torch
 
-from .tube_bank import GaussianState, load_gaussian_state, sample_tube_bank, save_tube_bank
+from .tube_bank import GaussianState, load_gaussian_state, load_scene_bank, save_tube_bank
 
 
 def _resample_indices(source_times: np.ndarray, target_times: np.ndarray) -> np.ndarray:
@@ -1187,15 +1187,7 @@ def export_entitybank(
 ) -> Path:
     run_dir = Path(run_dir)
     state, config, iteration = load_gaussian_state(run_dir)
-    gate_sharpness = float(config.get("temporal_gate_sharpness", 1.0))
-    drift_mix = float(config.get("temporal_drift_mix", 1.0))
-    bank = sample_tube_bank(
-        state,
-        num_frames=num_frames,
-        gate_sharpness=gate_sharpness,
-        drift_mix=drift_mix,
-        config=config,
-    )
+    bank = load_scene_bank(run_dir, num_frames=num_frames)
     out_dir = save_tube_bank(
         run_dir,
         state,

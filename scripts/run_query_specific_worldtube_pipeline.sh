@@ -146,6 +146,7 @@ QUERY_EVAL_PROFILE="${QUERY_EVAL_PROFILE:-${REFERGAUSSIAN_QUERY_EVAL_PROFILE:-de
 apply_query_eval_profile "${QUERY_EVAL_PROFILE}"
 echo "[profile] QUERY_EVAL_PROFILE=${QUERY_EVAL_PROFILE}"
 require_4dgs_run "${RUN_DIR}"
+gs_python "${GS_ROOT}/scripts/prepare_4dgs_run.py" --run-dir "${RUN_DIR}"
 
 QUERY_PROPOSAL_BUILDER="${QUERY_PROPOSAL_BUILDER:-mask_supported_lifting}"
 RENDERER_GEOMETRY_SUPPORT_DIR="${OUTPUT_ROOT}/renderer_geometry_support"
@@ -230,7 +231,7 @@ if gs_python "${GS_ROOT}/scripts/write_empty_query_selection.py" \
   --check-only >/dev/null 2>&1; then
   echo "[empty-query] query plan is explicitly empty; skipping proposal/entitybank stages for ${QUERY_NAME}"
   mkdir -p "${QUERY_RUN_DIR}"
-  ln -sfn "${RUN_DIR}/config.yaml" "${QUERY_RUN_DIR}/config.yaml"
+  ln -sfn "${RUN_DIR}/cfg_args" "${QUERY_RUN_DIR}/cfg_args"
   ln -sfn "${RUN_DIR}/point_cloud" "${QUERY_RUN_DIR}/point_cloud"
   ln -sfn "${RUN_DIR}/test" "${QUERY_RUN_DIR}/test"
   rm -rf "${QUERY_RUN_DIR}/entitybank"
@@ -452,7 +453,7 @@ fi
 run_export_renderer_geometry_final
 
 mkdir -p "${QUERY_RUN_DIR}"
-replace_query_run_link "${RUN_DIR}/config.yaml" "${QUERY_RUN_DIR}/config.yaml"
+replace_query_run_link "${RUN_DIR}/cfg_args" "${QUERY_RUN_DIR}/cfg_args"
 replace_query_run_link "${RUN_DIR}/point_cloud" "${QUERY_RUN_DIR}/point_cloud"
 replace_query_run_link "${RUN_DIR}/test" "${QUERY_RUN_DIR}/test"
 replace_query_run_link "${QUERY_ENTITYBANK_DIR}" "${QUERY_RUN_DIR}/entitybank"

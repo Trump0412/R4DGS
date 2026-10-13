@@ -642,6 +642,10 @@ def build_batch_provenance(
         REPO_ROOT / "scripts" / "run_query_batch.py",
         REPO_ROOT / "scripts" / "run_query_specific_worldtube_pipeline.sh",
         REPO_ROOT / "scripts" / "query_eval_profiles.sh",
+        REPO_ROOT / "scripts" / "prepare_4dgs_run.py",
+        REPO_ROOT / "refergaussian" / "checkpoint.py",
+        REPO_ROOT / "refergaussian" / "entitybank" / "tube_bank.py",
+        REPO_ROOT / "refergaussian" / "semantics" / "renderer_geometry.py",
         REPO_ROOT / "scripts" / "evaluate_ours_benchmark.py",
         REPO_ROOT / "scripts" / "evaluate_public_query_protocol.py",
         REPO_ROOT / "configs" / "benchmarks" / "release_protocols.json",
@@ -650,10 +654,11 @@ def build_batch_provenance(
     runs = {}
     for run_dir_text in sorted({str(item["run_dir"]) for item in items}):
         run_dir = Path(run_dir_text)
-        files = [run_dir / "config.yaml", run_dir / "metrics.json", run_dir / "results.json"]
+        files = [run_dir / "cfg_args", run_dir / "metrics.json", run_dir / "results.json"]
         point_cloud = _latest_point_cloud(run_dir)
         if point_cloud is not None:
             files.append(point_cloud)
+            files.append(point_cloud.parent / "deformation.pth")
         runs[run_dir_text] = [record for path in files if (record := _sha256_file(path))]
 
     datasets = {}
